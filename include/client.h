@@ -13,3 +13,10 @@
 #include <sys/time.h>
 #include <time.h>
 #include <pthread.h>
+struct socket_information
+{
+	int port;
+	char ip[20];
+};
+
+int client_init();

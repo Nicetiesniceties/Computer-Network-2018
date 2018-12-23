@@ -2,8 +2,6 @@
 //testing branch
 int main()
 {
-	init();
-	run();
-	destroy();
+	client_init();
 	return 0;
 }
