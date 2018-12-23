@@ -48,7 +48,7 @@ struct socket_information *read_server_info(int mode)//{{{
 			break;
 		}
 	}
-	fprintf(stdout, "Got it, server is at %s:%d", server->ip, server->port);
+	fprintf(stdout, "Got it, server is at %s:%d\n", server->ip, server->port);
 	return server;
 }//}}}
 int client_main_menu()//{{{
@@ -79,7 +79,8 @@ int start_connect(struct socket_information *server)//{{{
 	/* localhost setting */
 	info.sin_addr.s_addr = inet_addr(server -> ip);//IP address
 	info.sin_port = htons(server -> port);
-	
+	fprintf(stderr, "yoyo!\n");
+	fflush(stdout);
 	/* connect! */
 	//printf("%d", connect(sockfd, (struct sockaddr *)&info, sizeof(info)));
 	int connect_status = connect(sockfd, (struct sockaddr *)&info, sizeof(info));
@@ -92,8 +93,9 @@ int start_connect(struct socket_information *server)//{{{
 
 int client_init()//{{{
 {
-	struct socket_information *server = read_server_info(0);
-	//int sockfd = start_connect(server);
+	struct socket_information *server = read_server_info(1);
+	fflush(stdout);
+	int sockfd = start_connect(server);
 	return 0;
 }//}}}
 int client_run()//{{{

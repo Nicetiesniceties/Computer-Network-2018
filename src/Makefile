@@ -1,7 +1,7 @@
 TARGET=client
 INCLUDE=-I../include
 BIN=../bin
-FLAG=-Wall
+FLAG=-Wall -D debug
 GCC=gcc
 PRINT_OBJECT = client.o client_main.o
 # LIB=-lm
