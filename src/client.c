@@ -53,14 +53,49 @@ struct socket_information *read_server_info(int mode)//{{{
 }//}}}
 int client_main_menu()//{{{
 {
-	int opt = 0;
+	int opt = -1;
 	char login_opt[20];
-	puts("> You are at login hall!\n");
-	puts("> How can I help you? login/signup/exit\n");
-	fscanf(stdin, "%s", login_opt);
-	//scanf("%d");
+	puts("----------------------------------------");
+	puts("Entrance Hall");
+	puts("> How can I help you? login/signup/exit");
+	fprintf(stderr, "> ");
+	while(1)
+	{
+		fgets(login_opt, 20, stdin);
+		strtok(login_opt, "\n");
+		if(strcmp(login_opt, "login") == 0)
+			opt = client_login();
+		else if(strcmp(login_opt, "signup") == 0)
+			opt = client_sign_up();
+		else if(strcmp(login_opt, "exit") == 0)
+			opt = 0;
+		else
+			fprintf(stderr, "> Wrong instruction, please input again: ");
+		if(opt != -1)
+			break;
+	}
 	return opt;
 }//}}}
+int client_login()
+{
+	char acc[30], pwd[30];
+	puts("----------------------------------------");
+	puts("Login Hall");
+	fprintf(stderr, "> Please input your account name: ");
+	fgets(acc, 30, stdin);
+	strtok(acc, "\n");
+	fprintf(stderr, "> Please input your password: ");
+	fgets(pwd, 30, stdin);
+	strtok(pwd, "\n");
+	return 0;
+}
+int client_sign_up()
+{
+	puts("----------------------------------------");
+	puts(">> Hello newbie!");
+	puts(">> Please input your account name:");
+	return 0;
+}
 
 int start_connect(struct socket_information *server)//{{{
 {
@@ -79,8 +114,7 @@ int start_connect(struct socket_information *server)//{{{
 	/* localhost setting */
 	info.sin_addr.s_addr = inet_addr(server -> ip);//IP address
 	info.sin_port = htons(server -> port);
-	fprintf(stderr, "yoyo!\n");
-	fflush(stdout);
+
 	/* connect! */
 	//printf("%d", connect(sockfd, (struct sockaddr *)&info, sizeof(info)));
 	int connect_status = connect(sockfd, (struct sockaddr *)&info, sizeof(info));
@@ -93,7 +127,7 @@ int start_connect(struct socket_information *server)//{{{
 
 int client_init()//{{{
 {
-	struct socket_information *server = read_server_info(1);
+	struct socket_information *server = read_server_info(0);
 	fflush(stdout);
 	int sockfd = start_connect(server);
 	return 0;
@@ -103,6 +137,14 @@ int client_run()//{{{
 	while(1)
 	{
 		int opt = client_main_menu();
+		if(opt == 0)
+			break;
 	}
+	
 	return 0;
+}
+void client_destroy(struct socket_information *server)
+{
+	close(server -> sockfd);
+	free(server);
 }
