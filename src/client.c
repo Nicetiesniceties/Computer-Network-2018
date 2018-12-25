@@ -116,12 +116,33 @@ int start_connect(struct socket_information *server)//{{{
 	info.sin_port = htons(server -> port);
 
 	/* connect! */
+	int opt = 1;
+
+	//set non-blocking
+	if (ioctl(sockfd, FIONBIO, &opt) < 0) 
+	{
+		close(sockfd);
+		perror("Fail to set non-bloakcing socket.");
+		exit(0);
+	}
+
 	//printf("%d", connect(sockfd, (struct sockaddr *)&info, sizeof(info)));
 	int connect_status = connect(sockfd, (struct sockaddr *)&info, sizeof(info));
 	# ifdef debug
 	if(connect_status == -1)
 		fprintf(stderr, "Connection Error!\n");
+		exit(0);
 	# endif
+	
+	//set back to blocking
+	opt = 0;
+	if (ioctl(sockfd, FIONBIO, &opt) < 0) 
+	{
+		close(sockfd);
+		perror("ioctl");
+		exit(0);
+	}
+
 	return sockfd;
 }//}}}
 

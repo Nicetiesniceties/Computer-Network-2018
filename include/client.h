@@ -13,6 +13,7 @@
 #include <sys/time.h>
 #include <time.h>
 #include <pthread.h>
+#include <sys/ioctl.h>
 
 struct socket_information
 {
