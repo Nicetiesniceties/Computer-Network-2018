@@ -96,7 +96,7 @@ int recv_message(int conn_fd, void* message, size_t len);
 
 // copy header and recv remain part of message
 int complete_message_with_header(
-  int conn_fd, csiebox_protocol_header* header, void* result);
+  int conn_fd, line_protocol_header* header, void* result);
 
 // send message
 int send_message(int conn_fd, void* message, size_t len);

@@ -1,4 +1,5 @@
 #include "client.h"
+#include "common.h"
 struct socket_information *read_server_info(int mode)//{{{
 {
 	struct socket_information *server =
@@ -76,26 +77,45 @@ int client_main_menu()//{{{
 	}
 	return opt;
 }//}}}
-int client_login()
+int client_login()//{{{
 {
-	char acc[30], pwd[30];
+	char acc[31], pwd[31];
 	puts("----------------------------------------");
 	puts("Login Hall");
 	fprintf(stderr, "> Please input your account name: ");
-	fgets(acc, 30, stdin);
+	fgets(acc, 31, stdin);
 	strtok(acc, "\n");
 	fprintf(stderr, "> Please input your password: ");
-	fgets(pwd, 30, stdin);
+	fgets(pwd, 31, stdin);
 	strtok(pwd, "\n");
 	return 0;
-}
-int client_sign_up()
+}//}}}
+int client_sign_up()//{{{
 {
+	char acc[61], pwd[61];
 	puts("----------------------------------------");
+	puts("Sign up Counter");
 	puts(">> Hello newbie!");
-	puts(">> Please input your account name:");
+	fprintf(stderr, ">> Please input your account name: ");
+	fgets(acc, 31, stdin);
+	/*strlen error
+	while(strlen(acc) > USER_LEN_MAX)
+	{
+		puts(">> Sorry, the length shall be at most 30 letters.");
+		fprintf(stderr, "> Please input again: ");
+	}*/
+	
+	fprintf(stderr, ">> Please input your password: ");
+	fgets(pwd, 31, stdin);
+	/*strlen error
+	while(strlen(acc) > USER_LEN_MAX)
+	{
+		puts(">> Sorry, the length shall be at most 30 letters.");
+		fprintf(stderr, "> Please input again: ");
+	}*/
+	
 	return 0;
-}
+}//}}}
 
 int start_connect(struct socket_information *server)//{{{
 {
@@ -125,13 +145,13 @@ int start_connect(struct socket_information *server)//{{{
 		perror("Fail to set non-bloakcing socket.");
 		exit(0);
 	}
-
+	
 	//printf("%d", connect(sockfd, (struct sockaddr *)&info, sizeof(info)));
 	int connect_status = connect(sockfd, (struct sockaddr *)&info, sizeof(info));
 	# ifdef debug
-	if(connect_status == -1)
-		fprintf(stderr, "Connection Error!\n");
-		exit(0);
+	//if(connect_status == -1)
+	//	fprintf(stderr, "Connection Error!\n");
+	//	exit(0);
 	# endif
 	
 	//set back to blocking
@@ -142,7 +162,7 @@ int start_connect(struct socket_information *server)//{{{
 		perror("ioctl");
 		exit(0);
 	}
-
+	
 	return sockfd;
 }//}}}
 
