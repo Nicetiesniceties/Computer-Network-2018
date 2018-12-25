@@ -12,20 +12,22 @@
 typedef enum {
   DATUM_PROTOCOL_MAGIC_REQ = 0x90,
   DATUM_PROTOCOL_MAGIC_RES = 0x91,
-} DATUM_protocol_magic;
+} datum_protocol_magic;
 
 typedef enum {
   DATUM_PROTOCOL_OP_LOGIN = 0x00,
   DATUM_PROTOCOL_OP_SEND_MESSAGE = 0x01,
   DATUM_PROTOCOL_OP_SEND_FILE = 0x02,
   DATUM_PROTOCOL_OP_REQ_LOG = 0x03,
-} DATUM_protocol_op;
+  DATUM_PROTOCOL_OP_SIGN_UP = 0x04,
+  DATUM_PROTOCOL_OP_ADD_FRIEND = 0x05,
+} datum_protocol_op;
 
 typedef enum {
   DATUM_PROTOCOL_STATUS_OK = 0x00,
   DATUM_PROTOCOL_STATUS_FAIL = 0x01,
   DATUM_PROTOCOL_STATUS_MORE = 0x02,
-} DATUM_protocol_status;
+} datum_protocol_status;
 
 //common header
 typedef union {
@@ -50,7 +52,7 @@ typedef union {
   uint8_t bytes[11];
 } datum_protocol_header;
 
-//below are three types of complete header
+//below are four types of complete header
 //header used to login
 typedef union {
   struct {
@@ -63,6 +65,17 @@ typedef union {
   uint8_t bytes[sizeof(datum_protocol_header) + USER_LEN_MAX * 2];
 } datum_protocol_login;
 
+//header used to login
+typedef union {
+  struct {
+    datum_protocol_header header;
+    struct {
+      char user[USER_LEN_MAX];
+      char passwd[PASSWD_LEN_MAX];
+    } body;
+  } message;
+  uint8_t bytes[sizeof(datum_protocol_header) + USER_LEN_MAX * 2];
+} datum_protocol_sign_up;
 
 //header used to send data of file
 typedef union {

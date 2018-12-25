@@ -19,6 +19,9 @@ typedef struct user_information
 {
 	char name[31];
 	int login_status;
+	char folder[61];
+	char friends[100][31];
+	int friend_num;
 } user_info;
 
 typedef struct socket_information
@@ -35,3 +38,7 @@ void client_destroy(socket_info *server);
 //utility functions
 user_info *client_login(socket_info *server);
 user_info *client_sign_up(socket_info *server);
+struct socket_information *read_server_info(int mode);
+int start_connect(socket_info *server);
+user_info *client_main_menu(struct socket_information *server);
+int client_user_menu(user_info *cur_user);
