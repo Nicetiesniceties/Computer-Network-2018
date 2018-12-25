@@ -2,8 +2,9 @@
 //testing branch
 int main()
 {
-	client_init();
-	client_run();
+	struct socket_information *server;
+	server = client_init();
+	client_run(server);
 	//client_destroy();
 	return 0;
 }

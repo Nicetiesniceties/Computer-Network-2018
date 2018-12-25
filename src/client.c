@@ -1,5 +1,6 @@
 #include "client.h"
 #include "common.h"
+
 struct socket_information *read_server_info(int mode)//{{{
 {
 	struct socket_information *server =
@@ -52,7 +53,7 @@ struct socket_information *read_server_info(int mode)//{{{
 	fprintf(stdout, "Got it, server is at %s:%d\n", server->ip, server->port);
 	return server;
 }//}}}
-int client_main_menu()//{{{
+int client_main_menu(struct socket_information *server)//{{{
 {
 	int opt = -1;
 	char login_opt[20];
@@ -65,9 +66,9 @@ int client_main_menu()//{{{
 		fgets(login_opt, 20, stdin);
 		strtok(login_opt, "\n");
 		if(strcmp(login_opt, "login") == 0)
-			opt = client_login();
+			opt = client_login(server);
 		else if(strcmp(login_opt, "signup") == 0)
-			opt = client_sign_up();
+			opt = client_sign_up(server);
 		else if(strcmp(login_opt, "exit") == 0)
 			opt = 0;
 		else
@@ -77,7 +78,7 @@ int client_main_menu()//{{{
 	}
 	return opt;
 }//}}}
-int client_login()//{{{
+int client_login(struct socket_information *server)//{{{
 {
 	char acc[31], pwd[31];
 	puts("----------------------------------------");
@@ -88,9 +89,33 @@ int client_login()//{{{
 	fprintf(stderr, "> Please input your password: ");
 	fgets(pwd, 31, stdin);
 	strtok(pwd, "\n");
+	datum_protocol_login login_info;
+	datum_protocol_header header;
+	memset(&login_info, 0, sizeof(login_info));
+	memset(&header, 0, sizeof(header));
+	
+	char buf[4096];
+	strcpy(login_info.message.body.user, acc);
+	strcpy(login_info.message.body.passwd, pwd);
+	
+	login_info.message.header.req.magic = DATUM_PROTOCOL_MAGIC_REQ;
+	login_info.message.header.req.op = DATUM_PROTOCOL_OP_LOGIN;
+	login_info.message.header.req.datalen = sizeof(login_info) - sizeof(login_info.message.header);
+	
+	send_message(server -> sockfd, &login_info, sizeof(login_info));
+	//send_message(server -> sockfd, buf, login_info.message.body.datalen);
+	int recv_len = recv_message(server -> sockfd, &header, sizeof(header));
+	//if(header.res.status == DATUM_PROTOCOL_STATUS_OK)
+	if(recv_len != -1)
+	{
+		puts("----------------------------------------");
+		fprintf(stderr,"> Login successfully!\n");
+		fprintf(stderr,"> Whelcome back %s!\n", acc);
+		return 1;
+	}
 	return 0;
 }//}}}
-int client_sign_up()//{{{
+int client_sign_up(struct socket_information *server)//{{{
 {
 	char acc[61], pwd[61];
 	puts("----------------------------------------");
@@ -116,6 +141,32 @@ int client_sign_up()//{{{
 	
 	return 0;
 }//}}}
+
+int client_user_menu()
+{
+	char user_opt[20];
+	puts("----------------------------------------");
+	puts("User Menu");
+	puts(">>> What do you want to do? add_friend/chat/exit");
+	fprintf(stderr, ">>> ");
+	int opt = -1;
+	while(1)
+	{
+		fgets(user_opt, 20, stdin);
+		strtok(user_opt, "\n");
+		if(strcmp(user_opt, "add_friend") == 0)
+			puts("Adding...");
+		else if(strcmp(user_opt, "chat") == 0)
+			printf(">>> Into chat room ...\n");
+		else if(strcmp(user_opt, "exit") == 0)
+			opt = 0;
+		else
+			fprintf(stderr, ">>> Wrong instruction, please input again: ");
+		if(opt == 0)
+			break;
+	}
+	return 0;
+}
 
 int start_connect(struct socket_information *server)//{{{
 {
@@ -166,20 +217,24 @@ int start_connect(struct socket_information *server)//{{{
 	return sockfd;
 }//}}}
 
-int client_init()//{{{
+struct socket_information * client_init()//{{{
 {
 	struct socket_information *server = read_server_info(0);
 	fflush(stdout);
-	int sockfd = start_connect(server);
-	return 0;
+	server->sockfd = start_connect(server);
+	return server;
 }//}}}
-int client_run()//{{{
+int client_run(struct socket_information *server)//{{{
 {
 	while(1)
 	{
-		int opt = client_main_menu();
-		if(opt == 0)
+		int user_ok = client_main_menu(server);
+		if(!user_ok)
 			break;
+		else if(user_ok)
+		{
+			client_user_menu();
+		}
 	}
 	
 	return 0;

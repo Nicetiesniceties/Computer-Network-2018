@@ -21,7 +21,11 @@ struct socket_information
 	char ip[20];
 	int sockfd;
 };
-
-int client_init();
-int client_run();
+//main functions
+struct socket_information * client_init();
+int client_run(struct socket_information *server);
 void client_destroy(struct socket_information *server);
+
+//utility functions
+int client_login(struct socket_information *server);
+int client_sign_up(struct socket_information *server);

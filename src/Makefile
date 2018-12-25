@@ -3,7 +3,7 @@ INCLUDE=-I../include
 BIN=../bin
 FLAG=-Wall -D debug
 GCC=gcc
-PRINT_OBJECT = client.o client_main.o
+PRINT_OBJECT = client.o client_main.o common.o
 # LIB=-lm
 .PHONY: clean
 all: $(TARGET)
