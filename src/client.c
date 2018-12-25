@@ -53,9 +53,10 @@ struct socket_information *read_server_info(int mode)//{{{
 	fprintf(stdout, "Got it, server is at %s:%d\n", server->ip, server->port);
 	return server;
 }//}}}
-int client_main_menu(struct socket_information *server)//{{{
+user_info *client_main_menu(struct socket_information *server)//{{{
 {
-	int opt = -1;
+	user_info *cur_user = (user_info *) malloc(sizeof(user_info));
+	cur_user->login_status = -1;
 	char login_opt[20];
 	puts("----------------------------------------");
 	puts("Entrance Hall");
@@ -66,20 +67,23 @@ int client_main_menu(struct socket_information *server)//{{{
 		fgets(login_opt, 20, stdin);
 		strtok(login_opt, "\n");
 		if(strcmp(login_opt, "login") == 0)
-			opt = client_login(server);
+			cur_user = client_login(server);
 		else if(strcmp(login_opt, "signup") == 0)
-			opt = client_sign_up(server);
+			cur_user = client_sign_up(server);
 		else if(strcmp(login_opt, "exit") == 0)
-			opt = 0;
+			cur_user->login_status = 0;
 		else
 			fprintf(stderr, "> Wrong instruction, please input again: ");
-		if(opt != -1)
+		if(cur_user->login_status != -1)
 			break;
 	}
-	return opt;
+	return cur_user;
 }//}}}
-int client_login(struct socket_information *server)//{{{
+
+user_info *client_login(socket_info *server)//{{{
 {
+	user_info *cur_user = (user_info *) malloc(sizeof(user_info));
+	cur_user->login_status = 0;
 	char acc[31], pwd[31];
 	puts("----------------------------------------");
 	puts("Login Hall");
@@ -111,11 +115,12 @@ int client_login(struct socket_information *server)//{{{
 		puts("----------------------------------------");
 		fprintf(stderr,"> Login successfully!\n");
 		fprintf(stderr,"> Whelcome back %s!\n", acc);
-		return 1;
+		cur_user->login_status = 1;
+		strcpy(cur_user->name, acc);
 	}
-	return 0;
+	return cur_user;
 }//}}}
-int client_sign_up(struct socket_information *server)//{{{
+user_info* client_sign_up(struct socket_information *server)//{{{
 {
 	char acc[61], pwd[61];
 	puts("----------------------------------------");
@@ -142,7 +147,7 @@ int client_sign_up(struct socket_information *server)//{{{
 	return 0;
 }//}}}
 
-int client_user_menu()
+int client_user_menu(user_info *cur_user)
 {
 	char user_opt[20];
 	puts("----------------------------------------");
@@ -168,7 +173,7 @@ int client_user_menu()
 	return 0;
 }
 
-int start_connect(struct socket_information *server)//{{{
+int start_connect(socket_info *server)//{{{
 {
 	int sockfd = 0;
 	sockfd = socket(AF_INET , SOCK_STREAM , 0);
@@ -217,23 +222,24 @@ int start_connect(struct socket_information *server)//{{{
 	return sockfd;
 }//}}}
 
-struct socket_information * client_init()//{{{
+socket_info * client_init()//{{{
 {
 	struct socket_information *server = read_server_info(0);
 	fflush(stdout);
 	server->sockfd = start_connect(server);
 	return server;
 }//}}}
-int client_run(struct socket_information *server)//{{{
+
+int client_run(socket_info *server)//{{{
 {
 	while(1)
 	{
-		int user_ok = client_main_menu(server);
-		if(!user_ok)
+		user_info *cur_user = client_main_menu(server);
+		if(!cur_user->login_status)
 			break;
-		else if(user_ok)
+		else if(cur_user->login_status)
 		{
-			client_user_menu();
+			client_user_menu(cur_user);
 		}
 	}
 	

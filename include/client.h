@@ -15,17 +15,23 @@
 #include <pthread.h>
 #include <sys/ioctl.h>
 
-struct socket_information
+typedef struct user_information
+{
+	char name[31];
+	int login_status;
+} user_info;
+
+typedef struct socket_information
 {
 	int port;
 	char ip[20];
 	int sockfd;
-};
+} socket_info;
 //main functions
-struct socket_information * client_init();
-int client_run(struct socket_information *server);
-void client_destroy(struct socket_information *server);
+socket_info * client_init();
+int client_run(socket_info *server);
+void client_destroy(socket_info *server);
 
 //utility functions
-int client_login(struct socket_information *server);
-int client_sign_up(struct socket_information *server);
+user_info *client_login(socket_info *server);
+user_info *client_sign_up(socket_info *server);
