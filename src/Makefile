@@ -1,9 +1,10 @@
-TARGET=client
+TARGET=server client
 INCLUDE=-I../include
 BIN=../bin
 FLAG=-Wall -D debug
 GCC=gcc
-PRINT_OBJECT = client.o client_main.o common.o
+CLIENT_OBJECT =  client.o client_main.o common.o 
+SERVER_OBJECT =  server.o server_main.o common.o
 # LIB=-lm
 .PHONY: clean
 all: $(TARGET)
@@ -18,6 +19,10 @@ clean:
 		rm -rf $(BIN)/$$bin; \
 	done
 
-client: $(PRINT_OBJECT)
+client: $(CLIENT_OBJECT)
 	@echo "making: " $@
-	@$(GCC) -o $(BIN)/$@ $(FLAG) $(INCLUDE) $(PRINT_OBJECT) # $(LIB)
+	@$(GCC) -o $(BIN)/$@ $(FLAG) $(INCLUDE) $(CLIENT_OBJECT) # $(LIB)
+
+server: $(SERVER_OBJECT)
+	@echo "making: " $@
+	@$(GCC) -o $(BIN)/$@ $(FLAG) $(INCLUDE) $(SERVER_OBJECT) # $(LIB)

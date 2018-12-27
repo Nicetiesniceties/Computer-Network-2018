@@ -107,13 +107,13 @@ int start_connect(socket_info *server)//{{{
 	/* connect! */
 	int opt = 1;
 
-	//set non-blocking
+	/*//set non-blocking
 	if (ioctl(sockfd, FIONBIO, &opt) < 0) 
 	{
 		close(sockfd);
 		perror("Fail to set non-bloakcing socket.");
 		exit(0);
-	}
+	}*/
 	
 	//printf("%d", connect(sockfd, (struct sockaddr *)&info, sizeof(info)));
 	int connect_status = connect(sockfd, (struct sockaddr *)&info, sizeof(info));
@@ -126,13 +126,13 @@ int start_connect(socket_info *server)//{{{
 	# endif
 	
 	//set back to blocking
-	opt = 0;
+	/*opt = 0;
 	if (ioctl(sockfd, FIONBIO, &opt) < 0) 
 	{
 		close(sockfd);
 		perror("ioctl");
 		exit(0);
-	}
+	}*/
 	
 	return sockfd;
 }//}}}
@@ -169,7 +169,7 @@ user_info *client_main_menu(struct socket_information *server)//{{{
 user_info *client_login(socket_info *server)//{{{
 {
 	user_info *cur_user = (user_info *) malloc(sizeof(user_info));
-	cur_user->login_status = 0;
+	cur_user->login_status = -1;
 	char acc[31], pwd[31];
 	puts("----------------------------------------");
 	puts("Login Hall");
@@ -195,8 +195,7 @@ user_info *client_login(socket_info *server)//{{{
 	send_message(server -> sockfd, &login_msg, sizeof(login_msg));
 	//send_message(server -> sockfd, buf, login_msg.message.body.datalen);
 	int recv_len = recv_message(server -> sockfd, &header, sizeof(header));
-	//if(header.res.status == DATUM_PROTOCOL_STATUS_OK)
-	if(recv_len != -1)
+	if(header.res.status == DATUM_PROTOCOL_STATUS_OK)
 	{
 		puts("----------------------------------------");
 		fprintf(stderr,"> Login successfully!\n");
@@ -204,6 +203,7 @@ user_info *client_login(socket_info *server)//{{{
 		cur_user->login_status = 1;
 		strcpy(cur_user->name, acc);
 	}
+
 	return cur_user;
 }//}}}
 

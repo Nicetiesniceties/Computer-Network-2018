@@ -10,7 +10,7 @@ int recv_message(int conn_fd, void* message, size_t len) {
   if (len == 0) {
     return 0;
   }
-  return recv(conn_fd, message, len, MSG_WAITALL) == len;
+  return recv(conn_fd, message, len, MSG_WAITALL);
 }
 
 //used to receive complete header
