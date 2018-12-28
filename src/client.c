@@ -1,6 +1,7 @@
 #include "client.h"
 #include "common.h"
-
+int GLOBAL_CLIENT_LOGIN_FLAG = 0;
+char GLOBAL_NOW_CHATTING_USERNAME[USER_LEN_MAX] = "administrator";
 //main functions
 socket_info * client_init()//{{{
 {
@@ -19,7 +20,7 @@ int client_run(socket_info *server)//{{{
 			break;
 		else if(cur_user->login_status == USER_MAIN_OPT_LOG_IN_SUCCESS)
 		{
-			client_user_menu(cur_user);
+			client_user_menu(cur_user, server);
 		}
 	}
 	
@@ -138,6 +139,21 @@ int start_connect(socket_info *server)//{{{
 }//}}}
 
 //utility for client_run()
+
+//functions for little utility{{{
+void strip_path(char filename[FILENAME_LEN_MAX])
+{
+	char temp[FILENAME_LEN_MAX];
+	char *ch;
+	ch = strtok(filename, "/");
+	while (ch != NULL)
+	{
+		strcpy(temp, ch);
+		//printf("%s\n", ch);
+		ch = strtok(NULL, "/");
+	}
+	strcpy(filename, temp);
+}//}}}
 
 user_info *client_main_menu(struct socket_information *server)//{{{
 {
@@ -287,6 +303,7 @@ user_info* client_sign_up(struct socket_information *server)//{{{
 }//}}}
 
 //send file{{{
+
 void *thread_function_for_send_file(void *vargp)
 {
 	socket_info *message = (socket_info *)vargp;
@@ -296,12 +313,12 @@ void *thread_function_for_send_file(void *vargp)
 	message->sockfd = start_connect(message);
 	FILE * sent_file = fopen(message->file_path, "rb");
 	char *buffer = (char*) malloc(sizeof(char) * 1024);
+
+	//init header
 	datum_protocol_send_file send_file_msg;
 	datum_protocol_header header;
-	
 	memset(&send_file_msg, 0, sizeof(send_file_msg));
 	memset(&header, 0, sizeof(header));
-	
 	//char buf[4096];
 	strcpy(send_file_msg.message.body.receiver, message->receiver_name);
 	fseek(sent_file, 0, SEEK_END);
@@ -310,24 +327,43 @@ void *thread_function_for_send_file(void *vargp)
 	fseek(sent_file, 0, SEEK_SET);
 	send_file_msg.message.header.req.magic = DATUM_PROTOCOL_MAGIC_REQ;
 	send_file_msg.message.header.req.op = DATUM_PROTOCOL_OP_SEND_FILE;
+	send_file_msg.message.header.req.status = DATUM_PROTOCOL_STATUS_MORE;
 	send_file_msg.message.header.req.datalen = sizeof(send_file_msg) - sizeof(send_file_msg.message.header);
 	send_file_msg.message.header.req.client_id = message->user_id;
 
 	send_message(message -> sockfd, &send_file_msg, sizeof(send_file_msg));
 	//send_message(server -> sockfd, buf, login_msg.message.body.datalen);
 	int recv_len = recv_message(message -> sockfd, &header, sizeof(header));
+	free(&send_file_msg);
+	free(&header);
 	uint64_t size = 0;
 	//FILE *fp = fopen("./yoyoyo", "a");//for debug
 	if(header.res.status == DATUM_PROTOCOL_STATUS_OK)
 	{
+		char filename[FILENAME_LEN_MAX];
+		strcpy(filename, message->file_path);
+		strip_path(filename);
 		while((size = fread (buffer, 1, sizeof(buffer), sent_file)) != 0)
 		{
-			send_message(message->sockfd, &buffer, size);
+			//init header
+			datum_protocol_send_file send_file_ack;
+			memset(&send_file_ack, 0, sizeof(send_file_ack));
+			strcpy(send_file_ack.message.body.receiver, message->receiver_name);
+			send_file_ack.message.header.req.magic = DATUM_PROTOCOL_MAGIC_REQ;
+			send_file_ack.message.header.req.op = DATUM_PROTOCOL_OP_SEND_FILE;
+			send_file_ack.message.header.req.status = DATUM_PROTOCOL_STATUS_MORE;
+			send_file_ack.message.header.req.datalen = sizeof(send_file_ack) - sizeof(send_file_ack.message.header);
+			send_file_ack.message.header.req.client_id = message->user_id;
+			send_file_ack.message.body.datalen = size;
+			strcpy(send_file_ack.message.body.filename, filename);
+			memcpy(send_file_ack.message.body.file_buff, buffer, size);
+			send_message(message->sockfd, &send_file_ack, sizeof(send_file_ack));
+			free(&send_file_ack);
 			//fwrite(buffer, 1, size, fp);//
 		}
 	}
 	else
-		fprintf(stderr, "Fail to sent file\n");
+		fprintf(stderr, ">>> Fail to sent file\n");
 	close(message->sockfd);
 	//fclose(fp);//
 	pthread_exit(NULL);
@@ -351,34 +387,192 @@ void send_file_to_server(char file_path[40], char receiver_name[31], user_info *
 //}}} 
 
 //sycning and listening{{{
-
-
+void *thread_function_for_sycning_and_listening(void *vargp)
+{
+	//this thread is for listen request only
+	//socket_info *server = (socket_info *)vargp;
+	/*give init message to the server*/
+	int client_id = *((int *) vargp);
+	socket_info *server = (socket_info *)malloc(sizeof(socket_info));
+	server = read_server_info(0);
+	server->sockfd = start_connect(server);
+	datum_protocol_header header;
+	memset(&header, 0, sizeof(header));
+	header.req.magic = DATUM_PROTOCOL_MAGIC_REQ;
+	header.req.op = DATUM_PROTOCOL_OP_LISTEN;
+	header.req.client_id = client_id;
+	send_message(server->sockfd, &header, sizeof(header));
+	while(1)
+	{
+		datum_protocol_header header;
+		int recv_len = recv_message(server -> sockfd, &header, sizeof(header));
+		if(header.req.magic == DATUM_PROTOCOL_MAGIC_REQ)
+		{
+			switch(header.req.op)
+			{
+				case DATUM_PROTOCOL_OP_SEND_MESSAGE:
+				{
+					datum_protocol_send_message recv_msg;
+					memset(&recv_msg, 0, sizeof(recv_msg));
+					complete_message_with_header(server->sockfd, &header, &recv_msg);
+					if(strcpy(recv_msg.message.body.sender, GLOBAL_NOW_CHATTING_USERNAME))
+					{
+						fprintf(stderr, ">>> %s\n", recv_msg.message.body.msg);
+					}
+					free(&recv_msg);
+				}
+				case DATUM_PROTOCOL_OP_SEND_FILE:
+				{
+					datum_protocol_send_file recv_file;
+					memset(&recv_file, 0, sizeof(recv_file));
+					complete_message_with_header(server->sockfd, &header, &recv_file);
+					if(recv_file.message.header.req.status == DATUM_PROTOCOL_STATUS_MORE)
+					{
+						char filename[FILENAME_LEN_MAX] = "~/Downloads/";
+						strcat(filename, recv_file.message.body.filename);
+						FILE *fp = fopen(filename, "a");//for debug
+						fwrite(recv_file.message.body.file_buff, 1, recv_file.message.body.datalen, fp);
+					}
+					free(&recv_file);
+				}
+			}
+		}
+		free(&header);
+		if(!GLOBAL_CLIENT_LOGIN_FLAG)
+			break;
+		/*
+		else if(header.res.magic == DATUM_PROTOCOL_MAGIC_RES)
+		{
+			switch(header.res.op)
+			{
+				case DATUM_PROTOCOL_OP_SEND_MESSAGE:
+				{
+				
+				}
+				case DATUM_PROTOCOL_OP_SEND_FILE:
+				{
+				
+				}
+				case DATUM_PROTOCOL_OP_REQ_LOG:
+				{
+				
+				}
+			}
+		}
+		*/
+		/*
+		receive message: req, op_send_message
+		receive file: req, op_send_file, ok
+		append file: req, op_send_file, more
+		in ui: request and then log: res, op_send_req_log, ok
+		*/
+	}
+	pthread_exit(NULL);
+}
 //}}}
 
-int client_user_menu(user_info *cur_user)//{{{
+int chat(socket_info *server)//{{{
 {
+	fprintf(stderr, ">>> Who do you want to chat with? \n");
+	char homie[USER_LEN_MAX];
+	fgets(homie, USER_LEN_MAX, stdin);
+	strtok(homie, "\n");
 	
+	datum_protocol_req_log req_log;
+	datum_protocol_header header;
+	memset(&req_log, 0, sizeof(req_log));
+	memset(&header, 0, sizeof(header));
+	
+	strcpy(req_log.message.body.homie, homie);
+	req_log.message.header.req.magic = DATUM_PROTOCOL_MAGIC_REQ;
+	req_log.message.header.req.op = DATUM_PROTOCOL_OP_REQ_LOG;
+	req_log.message.header.req.client_id = server->user_id;
+	req_log.message.header.req.datalen = sizeof(req_log) - sizeof(req_log.message.header);
+	
+	send_message(server -> sockfd, &req_log, sizeof(req_log));
+	//send_message(server -> sockfd, buf, req_log.message.body.datalen);
+	int recv_len = recv_message(server -> sockfd, &header, sizeof(header));
+	//if(recv_len != -1)
+	if(header.res.status == DATUM_PROTOCOL_STATUS_OK)
+	{
+		datum_protocol_send_message sent_msg;
+		memset(&sent_msg, 0, sizeof(sent_msg));
+		complete_message_with_header(server->sockfd, &header, &sent_msg);
+		puts("----------------------------------------");
+		fprintf(stderr, "%s", sent_msg.message.body.msg);
+		fprintf(stderr,">>> Say hi to %s!\n", homie);
+		while(1)//keep chatting with your homie
+		{
+			char some_words[MSG_LEN_MAX];
+			fgets(some_words, MSG_LEN_MAX, stdin);
+			strtok(some_words, "\n");
+			datum_protocol_send_message sent_msg;
+			memset(&sent_msg, 0, sizeof(sent_msg));
+			memset(&header, 0, sizeof(header));
+			
+			strcpy(sent_msg.message.body.msg, some_words);
+			strcpy(sent_msg.message.body.receiver, homie);
+			sent_msg.message.header.req.magic = DATUM_PROTOCOL_MAGIC_REQ;
+			sent_msg.message.header.req.op = DATUM_PROTOCOL_OP_SEND_MESSAGE;
+			sent_msg.message.header.req.client_id = server->user_id;
+			sent_msg.message.header.req.datalen = sizeof(sent_msg) - sizeof(sent_msg.message.header);
+			
+			send_message(server -> sockfd, &sent_msg, sizeof(sent_msg));
+			//send_message(server -> sockfd, buf, sent_msg.message.body.datalen);
+			int recv_len = recv_message(server -> sockfd, &header, sizeof(header));
+			//if(recv_len != -1)
+			if(header.res.status == DATUM_PROTOCOL_STATUS_OK)
+			{
+				fprintf(stderr, ">>> --------\n");
+			}
+			else if(header.res.status == DATUM_PROTOCOL_STATUS_FAIL)
+			{
+				fprintf(stderr, ">>> Fail to send message\n");
+				return 0;
+			}
+		}
+	}
+	else if(header.res.status == DATUM_PROTOCOL_STATUS_FAIL)
+	{
+		puts("----------------------------------------");
+		fprintf(stderr,">>> Who the fuck is %s? U friends?\n", homie);
+		fprintf(stderr,">>> Please try again!\n");
+		return 0;
+	}
+	return 0;
+}//}}}
+
+int client_user_menu(user_info *cur_user, socket_info *server)//{{{
+{
+	GLOBAL_CLIENT_LOGIN_FLAG = 1;
+	pthread_t tid;
+	pthread_create(&tid, NULL, thread_function_for_sycning_and_listening, server); 
+	pthread_detach(tid);
 	char user_opt[20];
 	int opt = -1;
 	while(1)
 	{
 		puts("----------------------------------------");
 		puts("User Menu");
-		puts(">>> What do you want to do? add_friend/chat/exit");
+		puts(">>> What do you want to do? add_friend/chat/logout/send_file");
 		fprintf(stderr, ">>> ");
+		fflush(stdout);
 		fgets(user_opt, 20, stdin);
 		strtok(user_opt, "\n");
 		if(strcmp(user_opt, "add_friend") == 0)
 			puts("Adding...");
 		else if(strcmp(user_opt, "chat") == 0)
 		{
-			printf(">>> Into chat room ...\n");
-			char a[40] = "../src/client.c\0";
-			char b[31] = "user1\0";
-			send_file_to_server(a, b, cur_user);
+			chat(server);
 		}
-		else if(strcmp(user_opt, "exit") == 0)
-			opt = 0;
+		else if(strcmp(user_opt, "send_file") == 0)
+		{
+			puts("Adding...");
+		}
+		else if(strcmp(user_opt, "logout") == 0)
+		{
+			opt = 0, GLOBAL_CLIENT_LOGIN_FLAG = 0;
+		}
 		else
 			fprintf(stderr, ">>> Wrong instruction, please input again!\n");
 		if(opt == 0)
