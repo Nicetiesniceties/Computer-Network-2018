@@ -1,7 +1,7 @@
-TARGET=server client
+TARGET=client
 INCLUDE=-I../include
 BIN=../bin
-FLAG=-Wall -D debug
+FLAG=-Wall -D debug -lpthread
 GCC=gcc
 CLIENT_OBJECT =  client.o client_main.o common.o 
 SERVER_OBJECT =  server.o server_main.o common.o
