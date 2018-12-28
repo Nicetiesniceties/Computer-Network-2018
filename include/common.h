@@ -115,7 +115,8 @@ typedef union {
       datum_protocol_header header;
       struct {
         uint64_t datalen;
-        char receiver[USER_LEN_MAX];
+        char homie[USER_LEN_MAX];//from client to server
+        char msg[MSG_LEN_MAX];//bidirectional
       } body;
     } message;
     uint8_t bytes[sizeof(datum_protocol_header) + 8 + USER_LEN_MAX];
