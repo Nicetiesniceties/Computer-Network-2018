@@ -28,6 +28,7 @@ typedef struct user_information
 	char folder[61];
 	char friends[100][31];
 	int friend_num;
+	uint16_t user_id;
 } user_info;
 
 typedef struct socket_information

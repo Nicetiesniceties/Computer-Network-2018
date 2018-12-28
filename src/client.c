@@ -203,6 +203,7 @@ user_info *client_login(socket_info *server)//{{{
 		fprintf(stderr,"> Whelcome back %s!\n", acc);
 		cur_user->login_status = USER_MAIN_OPT_LOG_IN_SUCCESS;
 		strcpy(cur_user->name, acc);
+		cur_user->user_id = header.res.client_id;
 	}
 	else if(header.res.status == DATUM_PROTOCOL_STATUS_FAIL)
 	{
