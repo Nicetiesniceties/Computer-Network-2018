@@ -289,7 +289,8 @@ user_info* client_sign_up(struct socket_information *server)//{{{
 void *thread_function_for_send_file(void *vargp)//{{{
 {
 	socket_info *message = (socket_info *)vargp;
-	fprintf(stderr, "File '%s' sent to: %s\n", message->file_path, message->receiver_name);
+	puts("----------------------------------------");
+	fprintf(stderr, ">>> File '%s' sent to: %s\n", message->file_path, message->receiver_name);
 	
 	message->sockfd = start_connect(message);
 	FILE * sent_file = fopen(message->file_path, "rb");
