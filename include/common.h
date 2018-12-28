@@ -37,7 +37,6 @@ typedef union {
     uint8_t op;
     uint8_t status;
     uint16_t client_id;
-    char reciever[USER_LEN_MAX];
     //datalen = the length of complete header - the length of common header
     uint32_t datalen;
   } req;
@@ -46,11 +45,10 @@ typedef union {
     uint8_t op;
     uint8_t status;
     uint16_t client_id;
-    char reciever[USER_LEN_MAX];
     //datalen = the length of complete header - the length of common header
     uint32_t datalen;
   } res;
-  uint8_t bytes[9 + USER_LEN_MAX];
+  uint8_t bytes[9];
 } datum_protocol_header;
 
 //below are four types of complete header
@@ -85,9 +83,10 @@ typedef union {
     struct {
       //char path[400];
       uint64_t datalen;
+      char reciever[USER_LEN_MAX];
     } body;
   } message;
-  uint8_t bytes[sizeof(datum_protocol_header) + 8];
+  uint8_t bytes[sizeof(datum_protocol_header) + 8 + USER_LEN_MAX];
 } datum_protocol_send_file;
 
 //header used to send message
@@ -96,10 +95,23 @@ typedef union {
       datum_protocol_header header;
       struct {
         uint64_t datalen;
+        char reciever[USER_LEN_MAX];
       } body;
     } message;
-    uint8_t bytes[sizeof(datum_protocol_header) + 8];
+    uint8_t bytes[sizeof(datum_protocol_header) + 8 + USER_LEN_MAX];
 } datum_protocol_send_message;
+
+//header used to query log
+typedef union {
+    struct {
+      datum_protocol_header header;
+      struct {
+        uint64_t datalen;
+        char reciever[USER_LEN_MAX];
+      } body;
+    } message;
+    uint8_t bytes[sizeof(datum_protocol_header) + 8 + USER_LEN_MAX];
+} datum_protocol_req_log;
 
 /*
  * utility
