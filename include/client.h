@@ -15,6 +15,12 @@
 #include <pthread.h>
 #include <sys/ioctl.h>
 
+typedef enum {
+	USER_MAIN_OPT_LOG_IN_SUCCESS = 0x01,
+	USER_MAIN_OPT_EXIT = 0x02,
+	USER_MAIN_OPT_AGAIN = 0x03,
+} user_main_option;
+
 typedef struct user_information
 {
 	char name[31];
