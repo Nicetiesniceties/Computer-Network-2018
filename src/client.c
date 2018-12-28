@@ -369,8 +369,17 @@ void *thread_function_for_send_file(void *vargp)
 	pthread_exit(NULL);
 }
 
-void send_file_to_server(char file_path[40], char receiver_name[31], user_info *cur_user)
+void send_file_to_server(user_info *cur_user)
 { 
+	char file_path[40];
+	char receiver_name[31];
+	puts(">>> Who do you want to send to?");
+	fprintf(stderr, ">>> ");
+	fgets(receiver_name, 31, stdin);
+	puts(">>> What file  do you want to do?");
+	fprintf(stderr, ">>> ");
+	fflush(stdout);
+	fgets(file_path, 40, stdin);
 	socket_info *message = (socket_info *)malloc(sizeof(socket_info));
 	message = read_server_info(0);
 	strcpy(message->file_path, file_path);
@@ -495,17 +504,24 @@ int chat(socket_info *server)//{{{
 	//if(recv_len != -1)
 	if(header.res.status == DATUM_PROTOCOL_STATUS_OK)
 	{
-		datum_protocol_send_message sent_msg;
-		memset(&sent_msg, 0, sizeof(sent_msg));
-		complete_message_with_header(server->sockfd, &header, &sent_msg);
+		strcpy(GLOBAL_NOW_CHATTING_USERNAME, homie);
+		datum_protocol_send_message req_log;
+		memset(&req_log, 0, sizeof(req_log));
+		complete_message_with_header(server->sockfd, &header, &req_log);
 		puts("----------------------------------------");
-		fprintf(stderr, "%s", sent_msg.message.body.msg);
+		fprintf(stderr, "%s", req_log.message.body.msg);
 		fprintf(stderr,">>> Say hi to %s!\n", homie);
 		while(1)//keep chatting with your homie
 		{
 			char some_words[MSG_LEN_MAX];
+			fprintf(stderr,">>> ");
 			fgets(some_words, MSG_LEN_MAX, stdin);
 			strtok(some_words, "\n");
+			if(strcmp(some_words, "exit()") == 0)
+			{
+				strcpy(GLOBAL_NOW_CHATTING_USERNAME, "administrator");
+				return 0;
+			}
 			datum_protocol_send_message sent_msg;
 			memset(&sent_msg, 0, sizeof(sent_msg));
 			memset(&header, 0, sizeof(header));
@@ -542,6 +558,43 @@ int chat(socket_info *server)//{{{
 	return 0;
 }//}}}
 
+int add_friend(socket_info *server)//{{{
+{
+	fprintf(stderr, ">>> Who do you want to add? \n");
+	char homie[USER_LEN_MAX];
+	fgets(homie, USER_LEN_MAX, stdin);
+	strtok(homie, "\n");
+	
+	datum_protocol_add_friend add_friend_req;
+	datum_protocol_header header;
+	memset(&add_friend_req, 0, sizeof(add_friend_req));
+	memset(&header, 0, sizeof(header));
+	
+	strcpy(add_friend_req.message.body.homie, homie);
+	add_friend_req.message.header.req.magic = DATUM_PROTOCOL_MAGIC_REQ;
+	add_friend_req.message.header.req.op = DATUM_PROTOCOL_OP_ADD_FRIEND;
+	add_friend_req.message.header.req.client_id = server->user_id;
+	add_friend_req.message.header.req.datalen = sizeof(add_friend_req) - sizeof(add_friend_req.message.header);
+	
+	send_message(server -> sockfd, &add_friend_req, sizeof(add_friend_req));
+	//send_message(server -> sockfd, buf, req_log.message.body.datalen);
+	int recv_len = recv_message(server -> sockfd, &header, sizeof(header));
+	//if(recv_len != -1)
+	if(header.res.status == DATUM_PROTOCOL_STATUS_OK)
+	{
+		puts("----------------------------------------");
+		fprintf(stderr,">>> Sucessfully add %s!\n", homie);
+	}
+	else if(header.res.status == DATUM_PROTOCOL_STATUS_FAIL)
+	{
+		puts("----------------------------------------");
+		fprintf(stderr,">>> Who the fuck is %s?\n", homie);
+		fprintf(stderr,">>> Please try again!\n");
+		return 0;
+	}
+	return 0;
+}//}}}
+
 int client_user_menu(user_info *cur_user, socket_info *server)//{{{
 {
 	GLOBAL_CLIENT_LOGIN_FLAG = 1;
@@ -560,19 +613,13 @@ int client_user_menu(user_info *cur_user, socket_info *server)//{{{
 		fgets(user_opt, 20, stdin);
 		strtok(user_opt, "\n");
 		if(strcmp(user_opt, "add_friend") == 0)
-			puts("Adding...");
+			add_friend(server);
 		else if(strcmp(user_opt, "chat") == 0)
-		{
 			chat(server);
-		}
 		else if(strcmp(user_opt, "send_file") == 0)
-		{
-			puts("Adding...");
-		}
+			send_file_to_server(cur_user);
 		else if(strcmp(user_opt, "logout") == 0)
-		{
 			opt = 0, GLOBAL_CLIENT_LOGIN_FLAG = 0;
-		}
 		else
 			fprintf(stderr, ">>> Wrong instruction, please input again!\n");
 		if(opt == 0)
