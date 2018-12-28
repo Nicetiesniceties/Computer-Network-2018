@@ -286,7 +286,8 @@ user_info* client_sign_up(struct socket_information *server)//{{{
 	return cur_user;
 }//}}}
 
-void *thread_function_for_send_file(void *vargp)//{{{
+//send file{{{
+void *thread_function_for_send_file(void *vargp)
 {
 	socket_info *message = (socket_info *)vargp;
 	puts("----------------------------------------");
@@ -303,33 +304,42 @@ void *thread_function_for_send_file(void *vargp)//{{{
 	
 	//char buf[4096];
 	strcpy(send_file_msg.message.body.receiver, message->receiver_name);
+	fseek(sent_file, 0, SEEK_END);
 	send_file_msg.message.body.datalen = ftell(sent_file);
-	
+	fprintf(stderr, "datalen: %d\n", send_file_msg.message.body.datalen);
+	fseek(sent_file, 0, SEEK_SET);
 	send_file_msg.message.header.req.magic = DATUM_PROTOCOL_MAGIC_REQ;
 	send_file_msg.message.header.req.op = DATUM_PROTOCOL_OP_SEND_FILE;
 	send_file_msg.message.header.req.datalen = sizeof(send_file_msg) - sizeof(send_file_msg.message.header);
-	
+	send_file_msg.message.header.req.client_id = message->user_id;
+
 	send_message(message -> sockfd, &send_file_msg, sizeof(send_file_msg));
 	//send_message(server -> sockfd, buf, login_msg.message.body.datalen);
 	int recv_len = recv_message(message -> sockfd, &header, sizeof(header));
-	
+	uint64_t size = 0;
+	//FILE *fp = fopen("./yoyoyo", "a");//for debug
 	if(header.res.status == DATUM_PROTOCOL_STATUS_OK)
 	{
-		while(fread (buffer, 1, sizeof(buffer), sent_file) != 0)
-			send_message(message->sockfd, &buffer, sizeof(buffer));
+		while((size = fread (buffer, 1, sizeof(buffer), sent_file)) != 0)
+		{
+			send_message(message->sockfd, &buffer, size);
+			//fwrite(buffer, 1, size, fp);//
+		}
 	}
 	else
 		fprintf(stderr, "Fail to sent file\n");
 	close(message->sockfd);
+	//fclose(fp);//
 	pthread_exit(NULL);
 }
 
-void send_file_to_server(char file_path[40], char receiver_name[31])
+void send_file_to_server(char file_path[40], char receiver_name[31], user_info *cur_user)
 { 
 	socket_info *message = (socket_info *)malloc(sizeof(socket_info));
 	message = read_server_info(0);
 	strcpy(message->file_path, file_path);
 	strcpy(message->receiver_name, receiver_name);
+	message->user_id = cur_user->user_id;
 	//fprintf(stderr, "To: %s, %s\n", message->receiver_name, message->file_path);
 	fflush(stdout);
 	pthread_t tid;
@@ -338,8 +348,12 @@ void send_file_to_server(char file_path[40], char receiver_name[31])
 	//pthread_join(tid, NULL);
 	return;
 }
-
 //}}} 
+
+//sycning and listening{{{
+
+
+//}}}
 
 int client_user_menu(user_info *cur_user)//{{{
 {
@@ -361,7 +375,7 @@ int client_user_menu(user_info *cur_user)//{{{
 			printf(">>> Into chat room ...\n");
 			char a[40] = "../src/client.c\0";
 			char b[31] = "user1\0";
-			send_file_to_server(a, b);
+			send_file_to_server(a, b, cur_user);
 		}
 		else if(strcmp(user_opt, "exit") == 0)
 			opt = 0;
