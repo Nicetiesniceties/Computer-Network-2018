@@ -82,7 +82,7 @@ struct socket_information *read_server_info(int mode)//{{{
 			break;
 		}
 	}
-	fprintf(stdout, "Got it, server is at %s:%d\n", server->ip, server->port);
+	//fprintf(stdout, "Got it, server is at %s:%d\n", server->ip, server->port);
 	return server;
 }//}}}
 
@@ -174,10 +174,10 @@ user_info *client_login(socket_info *server)//{{{
 	char acc[31], pwd[31];
 	puts("----------------------------------------");
 	puts("Login Hall");
-	fprintf(stderr, "> Please input your account name: ");
+	fprintf(stderr, ">> Please input your account name: ");
 	fgets(acc, 31, stdin);
 	strtok(acc, "\n");
-	fprintf(stderr, "> Please input your password: ");
+	fprintf(stderr, ">> Please input your password: ");
 	fgets(pwd, 31, stdin);
 	strtok(pwd, "\n");
 	datum_protocol_login login_msg;
@@ -200,8 +200,8 @@ user_info *client_login(socket_info *server)//{{{
 	if(header.res.status == DATUM_PROTOCOL_STATUS_OK)
 	{
 		puts("----------------------------------------");
-		fprintf(stderr,"> Login successfully!\n");
-		fprintf(stderr,"> Whelcome back %s!\n", acc);
+		fprintf(stderr,">> Login successfully!\n");
+		fprintf(stderr,">> Whelcome back %s!\n", acc);
 		cur_user->login_status = USER_MAIN_OPT_LOG_IN_SUCCESS;
 		strcpy(cur_user->name, acc);
 		cur_user->user_id = header.res.client_id;
@@ -209,8 +209,8 @@ user_info *client_login(socket_info *server)//{{{
 	else if(header.res.status == DATUM_PROTOCOL_STATUS_FAIL)
 	{
 		puts("----------------------------------------");
-		fprintf(stderr,"> Fail to login.\n");
-		fprintf(stderr,"> Please try again!\n");
+		fprintf(stderr,">> Fail to login.\n");
+		fprintf(stderr,">> Please try again!\n");
 		cur_user->login_status = USER_MAIN_OPT_AGAIN;
 	}
 
@@ -286,26 +286,86 @@ user_info* client_sign_up(struct socket_information *server)//{{{
 	return cur_user;
 }//}}}
 
+void *thread_function_for_send_file(void *vargp)//{{{
+{
+	socket_info *message = (socket_info *)vargp;
+	fprintf(stderr, "File '%s' sent to: %s\n", message->file_path, message->receiver_name);
+	
+	message->sockfd = start_connect(message);
+	FILE * sent_file = fopen(message->file_path, "rb");
+	char *buffer = (char*) malloc(sizeof(char) * 1024);
+	datum_protocol_send_file send_file_msg;
+	datum_protocol_header header;
+	
+	memset(&send_file_msg, 0, sizeof(send_file_msg));
+	memset(&header, 0, sizeof(header));
+	
+	//char buf[4096];
+	strcpy(send_file_msg.message.body.receiver, message->receiver_name);
+	send_file_msg.message.body.datalen = ftell(sent_file);
+	
+	send_file_msg.message.header.req.magic = DATUM_PROTOCOL_MAGIC_REQ;
+	send_file_msg.message.header.req.op = DATUM_PROTOCOL_OP_SEND_FILE;
+	send_file_msg.message.header.req.datalen = sizeof(send_file_msg) - sizeof(send_file_msg.message.header);
+	
+	send_message(message -> sockfd, &send_file_msg, sizeof(send_file_msg));
+	//send_message(server -> sockfd, buf, login_msg.message.body.datalen);
+	int recv_len = recv_message(message -> sockfd, &header, sizeof(header));
+	
+	if(header.res.status == DATUM_PROTOCOL_STATUS_OK)
+	{
+		while(fread (buffer, 1, sizeof(buffer), sent_file) != 0)
+			send_message(message->sockfd, &buffer, sizeof(buffer));
+	}
+	else
+		fprintf(stderr, "Fail to sent file\n");
+	close(message->sockfd);
+	pthread_exit(NULL);
+}
+
+void send_file_to_server(char file_path[40], char receiver_name[31])
+{ 
+	socket_info *message = (socket_info *)malloc(sizeof(socket_info));
+	message = read_server_info(0);
+	strcpy(message->file_path, file_path);
+	strcpy(message->receiver_name, receiver_name);
+	//fprintf(stderr, "To: %s, %s\n", message->receiver_name, message->file_path);
+	fflush(stdout);
+	pthread_t tid;
+	pthread_create(&tid, NULL, thread_function_for_send_file, message); 
+	pthread_detach(tid);
+	//pthread_join(tid, NULL);
+	return;
+}
+
+//}}} 
+
 int client_user_menu(user_info *cur_user)//{{{
 {
+	
 	char user_opt[20];
-	puts("----------------------------------------");
-	puts("User Menu");
-	puts(">>> What do you want to do? add_friend/chat/exit");
-	fprintf(stderr, ">>> ");
 	int opt = -1;
 	while(1)
 	{
+		puts("----------------------------------------");
+		puts("User Menu");
+		puts(">>> What do you want to do? add_friend/chat/exit");
+		fprintf(stderr, ">>> ");
 		fgets(user_opt, 20, stdin);
 		strtok(user_opt, "\n");
 		if(strcmp(user_opt, "add_friend") == 0)
 			puts("Adding...");
 		else if(strcmp(user_opt, "chat") == 0)
+		{
 			printf(">>> Into chat room ...\n");
+			char a[40] = "../src/client.c\0";
+			char b[31] = "user1\0";
+			send_file_to_server(a, b);
+		}
 		else if(strcmp(user_opt, "exit") == 0)
 			opt = 0;
 		else
-			fprintf(stderr, ">>> Wrong instruction, please input again: ");
+			fprintf(stderr, ">>> Wrong instruction, please input again!\n");
 		if(opt == 0)
 			break;
 	}
