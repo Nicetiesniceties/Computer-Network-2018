@@ -36,6 +36,9 @@ typedef struct socket_information
 	int port;
 	char ip[20];
 	int sockfd;
+	char receiver_name[30 + 1];
+	char file_path[100]; 
+	uint16_t user_id;
 } socket_info;
 //main functions
 socket_info * client_init();
@@ -48,4 +51,4 @@ user_info *client_sign_up(socket_info *server);
 struct socket_information *read_server_info(int mode);
 int start_connect(socket_info *server);
 user_info *client_main_menu(struct socket_information *server);
-int client_user_menu(user_info *cur_user);
+int client_user_menu(user_info *cur_user, socket_info *server);

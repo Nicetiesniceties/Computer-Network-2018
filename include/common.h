@@ -25,6 +25,7 @@ typedef enum {
   DATUM_PROTOCOL_OP_SIGN_UP = 0x04,
   DATUM_PROTOCOL_OP_ADD_FRIEND = 0x05,
   DATUM_PROTOCOL_OP_LOGOUT = 0x06,
+  DATUM_PROTOCOL_OP_LISTEN = 0x07,
 } datum_protocol_op;
 
 typedef enum {
@@ -67,7 +68,17 @@ typedef union {
   uint8_t bytes[sizeof(datum_protocol_header) + USER_LEN_MAX * 2];
 } datum_protocol_login;
 
-//header used to login
+typedef union {
+  struct {
+    datum_protocol_header header;
+    struct {
+      char homie[USER_LEN_MAX];
+    } body;
+  } message;
+  uint8_t bytes[sizeof(datum_protocol_header) + USER_LEN_MAX];
+} datum_protocol_add_friend;
+
+//header used to sign up
 typedef union {
   struct {
     datum_protocol_header header;
@@ -119,7 +130,7 @@ typedef union {
         char msg[MSG_LEN_MAX];//bidirectional
       } body;
     } message;
-    uint8_t bytes[sizeof(datum_protocol_header) + 8 + USER_LEN_MAX];
+    uint8_t bytes[sizeof(datum_protocol_header) + 8 + USER_LEN_MAX + MSG_LEN_MAX];
 } datum_protocol_req_log;
 
 /*
