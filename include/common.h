@@ -11,6 +11,7 @@
 #define PASSWD_LEN_MAX 30
 #define MSG_LEN_MAX 1024
 #define FILENAME_LEN_MAX 100
+#define BUF_LEN_MAX 1024
 typedef enum {
   DATUM_PROTOCOL_MAGIC_REQ = 0x90,
   DATUM_PROTOCOL_MAGIC_RES = 0x91,
@@ -88,9 +89,10 @@ typedef union {
       char receiver[USER_LEN_MAX];//from client to server
 	  char sender[USER_LEN_MAX];//from server to client
 	  char filename[FILENAME_LEN_MAX];
+	  char file_buff[BUF_LEN_MAX];
     } body;
   } message;
-  uint8_t bytes[sizeof(datum_protocol_header) + 8 + USER_LEN_MAX * 2 + FILENAME_LEN_MAX];
+  uint8_t bytes[sizeof(datum_protocol_header) + 8 + USER_LEN_MAX * 2 + FILENAME_LEN_MAX + BUF_LEN_MAX];
 } datum_protocol_send_file;
 
 //header used to send message
@@ -132,4 +134,5 @@ int complete_message_with_header(
 
 // send message
 int send_message(int conn_fd, void* message, size_t len);
+
 
