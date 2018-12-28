@@ -7,8 +7,10 @@
  * protocol
  */
 
-#define USER_LEN_MAX 20
-#define PASSWD_LEN_MAX 20
+#define USER_LEN_MAX 30
+#define PASSWD_LEN_MAX 30
+#define MSG_LEN_MAX 1024
+#define FILENAME_LEN_MAX 100
 typedef enum {
   DATUM_PROTOCOL_MAGIC_REQ = 0x90,
   DATUM_PROTOCOL_MAGIC_RES = 0x91,
@@ -83,7 +85,9 @@ typedef union {
     struct {
       //char path[400];
       uint64_t datalen;
-      char reciever[USER_LEN_MAX];
+      char receiver[USER_LEN_MAX];//from client to server
+	  char sender[USER_LEN_MAX];//from server to client
+	  char filename[FILENAME_LEN_MAX];
     } body;
   } message;
   uint8_t bytes[sizeof(datum_protocol_header) + 8 + USER_LEN_MAX];
@@ -95,7 +99,8 @@ typedef union {
       datum_protocol_header header;
       struct {
         uint64_t datalen;
-        char reciever[USER_LEN_MAX];
+        char receiver[USER_LEN_MAX];//from client to server
+        char msg[MSG_LEN_MAX];//bidirectional
       } body;
     } message;
     uint8_t bytes[sizeof(datum_protocol_header) + 8 + USER_LEN_MAX];
@@ -107,7 +112,7 @@ typedef union {
       datum_protocol_header header;
       struct {
         uint64_t datalen;
-        char reciever[USER_LEN_MAX];
+        char receiver[USER_LEN_MAX];
       } body;
     } message;
     uint8_t bytes[sizeof(datum_protocol_header) + 8 + USER_LEN_MAX];
@@ -126,3 +131,4 @@ int complete_message_with_header(
 
 // send message
 int send_message(int conn_fd, void* message, size_t len);
+
