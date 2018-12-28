@@ -90,7 +90,7 @@ typedef union {
 	  char filename[FILENAME_LEN_MAX];
     } body;
   } message;
-  uint8_t bytes[sizeof(datum_protocol_header) + 8 + USER_LEN_MAX];
+  uint8_t bytes[sizeof(datum_protocol_header) + 8 + USER_LEN_MAX * 2 + FILENAME_LEN_MAX];
 } datum_protocol_send_file;
 
 //header used to send message
@@ -100,10 +100,11 @@ typedef union {
       struct {
         uint64_t datalen;
         char receiver[USER_LEN_MAX];//from client to server
+		char sender[USER_LEN_MAX];
         char msg[MSG_LEN_MAX];//bidirectional
       } body;
     } message;
-    uint8_t bytes[sizeof(datum_protocol_header) + 8 + USER_LEN_MAX];
+    uint8_t bytes[sizeof(datum_protocol_header) + 8 + USER_LEN_MAX * 2 + MSG_LEN_MAX];
 } datum_protocol_send_message;
 
 //header used to query log
