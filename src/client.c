@@ -15,9 +15,9 @@ int client_run(socket_info *server)//{{{
 	while(1)
 	{
 		user_info *cur_user = client_main_menu(server);
-		if(!cur_user->login_status)
+		if(cur_user->login_status == USER_MAIN_OPT_EXIT)
 			break;
-		else if(cur_user->login_status)
+		else if(cur_user->login_status == USER_MAIN_OPT_LOG_IN_SUCCESS)
 		{
 			client_user_menu(cur_user);
 		}
@@ -144,12 +144,12 @@ user_info *client_main_menu(struct socket_information *server)//{{{
 	user_info *cur_user = (user_info *) malloc(sizeof(user_info));
 	cur_user->login_status = -1;
 	char login_opt[20];
-	puts("----------------------------------------");
-	puts("Entrance Hall");
-	puts("> How can I help you? login/signup/exit");
-	fprintf(stderr, "> ");
 	while(1)
 	{
+		puts("----------------------------------------");
+		puts("Entrance Hall");
+		puts("> How can I help you? login/signup/exit");
+		fprintf(stderr, "> ");
 		fgets(login_opt, 20, stdin);
 		strtok(login_opt, "\n");
 		if(strcmp(login_opt, "login") == 0)
@@ -157,10 +157,10 @@ user_info *client_main_menu(struct socket_information *server)//{{{
 		else if(strcmp(login_opt, "signup") == 0)
 			cur_user = client_sign_up(server);
 		else if(strcmp(login_opt, "exit") == 0)
-			cur_user->login_status = 0;
+			cur_user->login_status = USER_MAIN_OPT_EXIT;
 		else
-			fprintf(stderr, "> Wrong instruction, please input again: ");
-		if(cur_user->login_status != -1)
+			fprintf(stderr, "> Wrong instruction, please input again!\n");
+		if(cur_user->login_status != USER_MAIN_OPT_AGAIN)
 			break;
 	}
 	return cur_user;
@@ -170,6 +170,7 @@ user_info *client_login(socket_info *server)//{{{
 {
 	user_info *cur_user = (user_info *) malloc(sizeof(user_info));
 	cur_user->login_status = -1;
+	cur_user->login_status = USER_MAIN_OPT_EXIT;
 	char acc[31], pwd[31];
 	puts("----------------------------------------");
 	puts("Login Hall");
@@ -195,13 +196,22 @@ user_info *client_login(socket_info *server)//{{{
 	send_message(server -> sockfd, &login_msg, sizeof(login_msg));
 	//send_message(server -> sockfd, buf, login_msg.message.body.datalen);
 	int recv_len = recv_message(server -> sockfd, &header, sizeof(header));
+	//if(recv_len != -1)
 	if(header.res.status == DATUM_PROTOCOL_STATUS_OK)
 	{
 		puts("----------------------------------------");
 		fprintf(stderr,"> Login successfully!\n");
 		fprintf(stderr,"> Whelcome back %s!\n", acc);
-		cur_user->login_status = 1;
+		cur_user->login_status = USER_MAIN_OPT_LOG_IN_SUCCESS;
 		strcpy(cur_user->name, acc);
+		cur_user->user_id = header.res.client_id;
+	}
+	else if(header.res.status == DATUM_PROTOCOL_STATUS_FAIL)
+	{
+		puts("----------------------------------------");
+		fprintf(stderr,"> Fail to login.\n");
+		fprintf(stderr,"> Please try again!\n");
+		cur_user->login_status = USER_MAIN_OPT_AGAIN;
 	}
 
 	return cur_user;
@@ -233,7 +243,7 @@ user_info* client_sign_up(struct socket_information *server)//{{{
 		fprintf(stderr, "> Please input again: ");
 	}*/
 	user_info *cur_user = (user_info *) malloc(sizeof(user_info));
-	cur_user->login_status = 0;
+	cur_user->login_status = USER_MAIN_OPT_EXIT;
 
 	datum_protocol_sign_up sign_up_msg;
 	datum_protocol_header header;
@@ -251,13 +261,12 @@ user_info* client_sign_up(struct socket_information *server)//{{{
 	send_message(server -> sockfd, &sign_up_msg, sizeof(sign_up_msg));
 	//send_message(server -> sockfd, buf, sign_up_msg.message.body.datalen);
 	int recv_len = recv_message(server -> sockfd, &header, sizeof(header));
-	//if(header.res.status == DATUM_PROTOCOL_STATUS_OK)
-	if(recv_len != -1)
+	//if(recv_len != -1)
+	if(header.res.status == DATUM_PROTOCOL_STATUS_OK)
 	{
 		puts("----------------------------------------");
 		fprintf(stderr,"> Sign up successfully!\n");
 		fprintf(stderr,"> Whelcome to Datum %s!\n", acc);
-		cur_user->login_status = 1;
 		strcpy(cur_user->name, acc);
 		//make some directory for new_user
 		struct stat st = {0};
@@ -267,6 +276,13 @@ user_info* client_sign_up(struct socket_information *server)//{{{
 			mkdir(path_name, 0700);
 		}
 	}
+	else if(header.res.status == DATUM_PROTOCOL_STATUS_FAIL)
+	{
+		puts("----------------------------------------");
+		fprintf(stderr,"> Sorry, the name is already taken!\n");
+		fprintf(stderr,"> Please retry!\n");
+	}
+	cur_user->login_status = USER_MAIN_OPT_AGAIN;
 	return cur_user;
 }//}}}
 
