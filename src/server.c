@@ -23,6 +23,7 @@ static void datum_sign_up(server_info* server, int conn_fd, datum_protocol_sign_
 static void datum_send_message(server_info* server, int conn_fd, datum_protocol_send_message* message);
 static int check_recv_online(server_info* server, char* reciever);
 static void datum_send_file(server_info* server, int conn_fd, datum_protocol_send_file* file);
+static void datum_req_log(server_info* server, int conn_fd, datum_protocol_send_req send_req);
 static void datum_logout(server_info* server, int conn_fd);
 
 static char filebuf[4000];
@@ -146,21 +147,21 @@ int server_run(server_info* server){
                 if(complete_message_with_header(conn_fd, &header, &req)){
                   send_file(server, conn_fd, &req);
                 }
-                break;
+                break;*/
       				case DATUM_PROTOCOL_OP_REQ_LOG:
                 fprintf(stderr, "\nrequest log\n", );
-                datum_protocol_req_log req;
-                if(complete_message_with_header(conn_fd, &header, &req)){
-                  req_log(server, conn_fd, &req);
+                datum_protocol_req_log req_log;
+                if(complete_message_with_header(conn_fd, &header, &req_log)){
+                  req_log(server, conn_fd, &req_log);  
                 }
                 break;
-      				case DATUM_PROTOCOL_OP_ADD_FRIEND:
+      				//case DATUM_PROTOCOL_OP_ADD_FRIEND:
       				case DATUM_PROTOCOL_OP_LOGOUT:
                 fprintf(stderr, "\nlog out\n");
                 if(complete_message_with_header(conn_fd, &header, &req)){
                   logout(server, conn_fd, &req);
                 }
-                break;*/
+                break;
       				default:
                 continue;
       				fprintf(stderr, "hahaha\n");
@@ -381,7 +382,7 @@ static void datum_sign_up(server_info* server, int conn_fd, datum_protocol_sign_
 }
 static void datum_send_message(server_info* server, int conn_fd, datum_protocol_send_message* message){
   char *sender = server->client[conn_fd]->account.user;
-  char *reciever = message->message.header.req.reciever;
+  char *reciever = message->message.body.reciever;
   char sender_path[100] = {0};
   char reciever_path[100] = {0};
   strcpy(sender_path, server->arg.path);
@@ -472,4 +473,15 @@ static int check_recv_online(server_info* server, char* reciever){
     }
   }
   return recv_fd;
+}
+
+static void datum_req_log(server_info* server, int conn_fd, datum_protocol_send_req send_req){
+  char log_path[100] = {0};
+  strcpy(log_path, server->arg.path);
+  strcat(log_path, "/");
+  strcat(log_path, server->client[conn_fd]->account.user);
+  strcat(log_path, "/");
+  strcat(log_path, send_req->message.body.receiver);
+  strcat(log_path, "/.log");
+  fprintf(stderr, "log file path:%s\n", log_path)
 }
