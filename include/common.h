@@ -119,7 +119,7 @@ typedef union {
         char msg[MSG_LEN_MAX];//bidirectional
       } body;
     } message;
-    uint8_t bytes[sizeof(datum_protocol_header) + 8 + USER_LEN_MAX];
+    uint8_t bytes[sizeof(datum_protocol_header) + 8 + USER_LEN_MAX + MSG_LEN_MAX];
 } datum_protocol_req_log;
 
 /*
