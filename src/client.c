@@ -614,7 +614,7 @@ int show_friend_list(socket_info *server)//{{{
 	int recv_status = recv_message(server -> sockfd, &header, sizeof(header));
 	if(recv_status == 0)
 	{
-		fprintf(stderr, "recv_status: %d\n", recv_status);
+		//fprintf(stderr, "recv_status: %d\n", recv_status);
 		fprintf(stderr, "Connection Error!\n");
 		return -1;
 	}
@@ -925,14 +925,14 @@ int client_user_menu(user_info *cur_user, socket_info *server)//{{{
 			user_option_status = client_unblock_user(server);
 		else
 			fprintf(stderr, ">>> Wrong instruction, please input again!\n");
-		if(GLOBAL_CLIENT_LOGIN_FLAG == 0)
-			break;
-		if(user_option_status < 0)
+		if(user_option_status == -1)
 		{
-			client_logout(server);
+			GLOBAL_CLIENT_LOGIN_FLAG = 0;
 			//GLOBAL_CLIENT_LOGIN_FLAG = 0;
 			return 1;
 		}
+		else if(GLOBAL_CLIENT_LOGIN_FLAG == 0)
+			break;
 	}
 	return 0;
 }//}}}
