@@ -4,11 +4,11 @@
 
 [TOC]
 
-##Introduction
+## Introduction
 
 This is a project for NTU CSIE Computer Internet course (2018), mainly about  building a server-client system  with serveral features, including chatting, sending files, and so on.
 
-##Instructions on how to run server & clients
+## Instructions on how to run server & clients
 
 > This part invloving compiling and running, which is what users usually  urge to search for, so we put it in the very beginnin of our README.
 
