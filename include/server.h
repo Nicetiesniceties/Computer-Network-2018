@@ -11,6 +11,7 @@ typedef struct {
 typedef struct {
   account_info account;
   int conn_fd;
+  int req_fd;
 } client_info;
 
 typedef struct {

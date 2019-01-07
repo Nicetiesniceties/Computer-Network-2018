@@ -14,6 +14,7 @@
 #include <time.h>
 #include <pthread.h>
 #include <sys/ioctl.h>
+#include <openssl/sha.h>
 
 typedef enum {
 	USER_MAIN_OPT_LOG_IN_SUCCESS = 0x01,
@@ -24,10 +25,8 @@ typedef enum {
 typedef struct user_information
 {
 	char name[31];
+	char pwd[31];
 	int login_status;
-	char folder[61];
-	char friends[100][31];
-	int friend_num;
 	uint16_t user_id;
 } user_info;
 
@@ -37,6 +36,7 @@ typedef struct socket_information
 	char ip[20];
 	int sockfd;
 	char receiver_name[30 + 1];
+	char sender_name[30 + 1];
 	char file_path[100]; 
 	uint16_t user_id;
 } socket_info;
@@ -52,3 +52,4 @@ struct socket_information *read_server_info(int mode);
 int start_connect(socket_info *server);
 user_info *client_main_menu(struct socket_information *server);
 int client_user_menu(user_info *cur_user, socket_info *server);
+void reconnect(user_info *cur_user, socket_info *server);

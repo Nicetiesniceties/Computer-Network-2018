@@ -9,9 +9,9 @@
 
 #define USER_LEN_MAX 30
 #define PASSWD_LEN_MAX 30
-#define MSG_LEN_MAX 1024
+#define MSG_LEN_MAX 10240
 #define FILENAME_LEN_MAX 100
-#define BUF_LEN_MAX 1024
+#define BUF_LEN_MAX 10240
 typedef enum {
   DATUM_PROTOCOL_MAGIC_REQ = 0x90,
   DATUM_PROTOCOL_MAGIC_RES = 0x91,
@@ -26,6 +26,9 @@ typedef enum {
   DATUM_PROTOCOL_OP_ADD_FRIEND = 0x05,
   DATUM_PROTOCOL_OP_LOGOUT = 0x06,
   DATUM_PROTOCOL_OP_LISTEN = 0x07,
+  DATUM_PROTOCOL_OP_REQ_LIST = 0x08,
+  DATUM_PROTOCOL_OP_BLOCK = 0x09,
+  DATUM_PROTOCOL_OP_UNBLOCK = 0x10,
 } datum_protocol_op;
 
 typedef enum {
@@ -133,6 +136,19 @@ typedef union {
     uint8_t bytes[sizeof(datum_protocol_header) + 8 + USER_LEN_MAX + MSG_LEN_MAX];
 } datum_protocol_req_log;
 
+//header used to query friend_list
+typedef union {
+    struct {
+      datum_protocol_header header;
+      struct {
+        uint64_t datalen;
+        char homie[USER_LEN_MAX];//from client to server
+        char msg[MSG_LEN_MAX];//bidirectional
+      } body;
+    } message;
+    uint8_t bytes[sizeof(datum_protocol_header) + 8 + USER_LEN_MAX + MSG_LEN_MAX];
+} datum_protocol_req_list;
+
 /*
  * utility
  */
@@ -146,5 +162,4 @@ int complete_message_with_header(
 
 // send message
 int send_message(int conn_fd, void* message, size_t len);
-
 

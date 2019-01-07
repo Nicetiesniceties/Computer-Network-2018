@@ -1,4 +1,4 @@
-TARGET=client
+TARGET=client server
 INCLUDE=-I../include
 BIN=../bin
 FLAG=-Wall -D debug -lpthread

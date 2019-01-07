@@ -5,6 +5,6 @@ int main()
 	struct socket_information *server;
 	server = client_init();
 	client_run(server);
-	//client_destroy();
+	client_destroy(server);
 	return 0;
 }
