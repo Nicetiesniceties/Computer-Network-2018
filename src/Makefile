@@ -1,9 +1,10 @@
 TARGET=client server
 INCLUDE=-I../include
 BIN=../bin
-FLAG=-Wall -D debug -lpthread
+FLAG=-Wall -D debug -lpthread -lssl -lcrypto
 GCC=gcc
-CLIENT_OBJECT =  client.o client_main.o common.o 
+G++=g++
+CLIENT_OBJECT =  client.o client_main.o common.o
 SERVER_OBJECT =  server.o server_main.o common.o
 # LIB=-lm
 .PHONY: clean
