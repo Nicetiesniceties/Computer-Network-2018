@@ -358,7 +358,7 @@ there are only two functions, `client_main_menu()` and `client_user_menu()`, tha
 
   Whenever the timeout reached for server's ACK response, client check the connection of the server by the `connect()` function, and if the connection is broken. It would tell the user, and keep trying reconnecting until server's back again or user close the process. If reconnecting sucessfully, user don't have to sign in again, which will be done by the reconnect function.
 
-- **block/unblock **
+- **block/unblock**
 
   User can block and unblock other users to avoid uncomfortable add-friend or sending request.
 
